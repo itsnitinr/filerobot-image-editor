@@ -11,32 +11,42 @@ import {
   WatermarkWrapper,
   WrapperForControls,
   WrapperForOpacity,
-  WrapperForURL
+  WrapperForURL,
 } from '../../styledComponents';
 import { debounce } from 'throttle-debounce';
 import Range from '../Range';
 import Select from '../Shared/Select';
+import Modal from '../Shared/Modal';
 import {
   WATERMARK_POSITIONS,
   WATERMARK_POSITIONS_PRESET,
   WATERMARK_CLOUDIMAGE_FONTS,
   WATERMARK_UNIQUE_KEY,
-  SHAPES_VARIANTS
+  SHAPES_VARIANTS,
 } from '../../config';
 import { getWatermarkSquaredPosition, getCanvasNode } from '../../utils';
-
 
 export default class extends Component {
   constructor(props) {
     super(props);
-    const { opacity, position, url, applyByDefault, activePositions, handleOpacity } = props.watermark;
+    const {
+      opacity,
+      position,
+      url,
+      applyByDefault,
+      activePositions,
+      handleOpacity,
+    } = props.watermark;
     let { urls, fonts } = props.watermark;
 
     let setActivePositions = [];
     let activePosition = position || 'right-top';
 
     // check if a preset was selected
-    if (typeof activePositions === 'string' && WATERMARK_POSITIONS_PRESET.hasOwnProperty(activePositions)) {
+    if (
+      typeof activePositions === 'string' &&
+      WATERMARK_POSITIONS_PRESET.hasOwnProperty(activePositions)
+    ) {
       setActivePositions = WATERMARK_POSITIONS_PRESET[activePositions];
     }
 
@@ -44,7 +54,7 @@ export default class extends Component {
     else if (Array.isArray(activePositions)) {
       const fullPos = Array(9).fill(0);
       // merge with an default of 9 to prevent errors when the length is lower 9
-      activePositions.map((val, i) => fullPos[i] = val);
+      activePositions.map((val, i) => (fullPos[i] = val));
       setActivePositions = fullPos;
 
       // return the default that all positions are active
@@ -62,11 +72,11 @@ export default class extends Component {
         if (typeof url === 'string') {
           const splittedURL = url.split('/');
 
-          return { url, label: splittedURL[splittedURL.length - 1] }
+          return { url, label: splittedURL[splittedURL.length - 1] };
         } else {
           return url;
         }
-      })
+      });
     }
 
     this.initWatermarkImage(url || urls?.[0]?.url);
@@ -88,7 +98,7 @@ export default class extends Component {
       textSize: 62,
       textFont: 'Arial',
       fonts: fonts || this.props.config.theme.fonts,
-    }
+    };
   }
 
   componentDidUpdate(prevProps) {
@@ -97,7 +107,9 @@ export default class extends Component {
     if (nextProps.watermark.position !== this.state.position) {
       this.onPositionChange(this.state.position);
     }
-    if (nextProps.watermark.applyByDefault !== prevProps.watermark.applyByDefault) {
+    if (
+      nextProps.watermark.applyByDefault !== prevProps.watermark.applyByDefault
+    ) {
       if (this.getWatermarkLayer()) {
         this.updateWatermarkProperty(
           { applyByDefault: false },
@@ -124,34 +136,44 @@ export default class extends Component {
 
   changeOpacity = (opacity) => {
     this.updateWatermarkProperty({ opacity });
-  }
+  };
 
   updateWatermarkProperty = (data, shapeData, watermarkObjectData) => {
     const {
       shapeOperations,
-      watermark: { lockScaleToPercentage = 0 }
+      watermark: { lockScaleToPercentage = 0 },
     } = this.props;
-    if (!shapeData) { shapeData = data }
-    if (!watermarkObjectData) { watermarkObjectData = data }
+    if (!shapeData) {
+      shapeData = data;
+    }
+    if (!watermarkObjectData) {
+      watermarkObjectData = data;
+    }
 
     const watermark = this.getWatermarkLayer() || {};
     this.setState(data, () => {
       shapeOperations.addOrUpdate(
-        { ...shapeData, lockScaleToPercentage, key: WATERMARK_UNIQUE_KEY, index: watermark.index, tab: 'watermark' },
+        {
+          ...shapeData,
+          lockScaleToPercentage,
+          key: WATERMARK_UNIQUE_KEY,
+          index: watermark.index,
+          tab: 'watermark',
+        },
         {
           watermark: {
             ...this.props.watermark,
-            ...watermarkObjectData
-          }
+            ...watermarkObjectData,
+          },
         }
       );
     });
-  }
+  };
 
   getWatermarkLayer = () => {
     const { shapeOperations } = this.props;
     return shapeOperations.getShape({ key: WATERMARK_UNIQUE_KEY });
-  }
+  };
 
   changeURL = (event, shapeData = {}) => {
     const nextValue = event.target.value;
@@ -163,8 +185,12 @@ export default class extends Component {
 
     const position = this.state.position;
 
-    this.updateWatermarkProperty({ url: nextValue, position }, { img: nextValue, position, ...shapeData }, { url: '', text: false })
-  }
+    this.updateWatermarkProperty(
+      { url: nextValue, position },
+      { img: nextValue, position, ...shapeData },
+      { url: '', text: false }
+    );
+  };
 
   changeTextProperty = (event) => {
     const updatedProperty = { [event.target.name]: event.target.value };
@@ -184,52 +210,61 @@ export default class extends Component {
       opacity,
       variant: SHAPES_VARIANTS.TEXT,
       tab: 'watermark',
-      ...updatedProperty
+      ...updatedProperty,
     };
 
     this.updateWatermarkProperty(
       { ...updatedProperty },
       { ...newWatermarkData, resizingBox: true },
-      { text: { ...this.props.watermark.text, ...newWatermarkData } },
+      { text: { ...this.props.watermark.text, ...newWatermarkData } }
     );
-  }
+  };
 
   readFile = (event) => {
     const { config } = this.props;
     // Disable uploading file processing if it's through cloudimage
     if (config.processWithCloudimage) return null;
-    
+
     const input = event.target;
     if (input.files && input.files[0]) {
       const reader = new FileReader();
       reader.onload = (e) => {
-        this.changeURL({ target: { value: e.target.result } }, { variant: SHAPES_VARIANTS.IMAGE });
-      }
+        this.changeURL(
+          { target: { value: e.target.result } },
+          { variant: SHAPES_VARIANTS.IMAGE }
+        );
+      };
       reader.readAsDataURL(input.files[0]);
     }
-  }
+  };
 
   getWatermarkDimensionsByPosString = (positionString, width, height) => {
-    return getWatermarkSquaredPosition(positionString, getCanvasNode(this.props.config.elementId), width, height);
-  }
+    return getWatermarkSquaredPosition(
+      positionString,
+      getCanvasNode(this.props.config.elementId),
+      width,
+      height
+    );
+  };
 
-  onPositionChange = value => {
+  onPositionChange = (value) => {
     const { width, height } = this.getWatermarkLayer() || {};
     if (!width && !height) {
-      return
+      return;
     }
 
     const [
       x,
       y,
       scaledWidth,
-      scaledHeight
+      scaledHeight,
     ] = this.getWatermarkDimensionsByPosString(value, width, height);
     this.updateWatermarkProperty(
       { position: value, width: scaledWidth, height: scaledHeight },
       { x, y, width: scaledWidth, height: scaledHeight },
-      { position: value, x, y, width: scaledWidth, height: scaledHeight });
-  }
+      { position: value, x, y, width: scaledWidth, height: scaledHeight }
+    );
+  };
 
   initWatermarkImage = debounce(500, (url) => {
     const { updateState } = this.props;
@@ -238,15 +273,15 @@ export default class extends Component {
     updateState({ isShowSpinner: true });
 
     const watermarkImageState = (newImage) => ({
-        logoImage: newImage,
-        isShowSpinner: false,
-        watermark: { ...this.props.watermark, url: newImage.src }
+      logoImage: newImage,
+      isShowSpinner: false,
+      watermark: { ...this.props.watermark, url: newImage.src },
     });
 
     if (url) {
       const {
         shapeOperations,
-        watermark: { lockScaleToPercentage = 0, position }
+        watermark: { lockScaleToPercentage = 0, position },
       } = this.props;
       const { opacity } = this.state;
 
@@ -265,26 +300,33 @@ export default class extends Component {
 
         const index = (this.getWatermarkLayer() || {}).index;
 
-        const [x, y, width,height] = this.getWatermarkDimensionsByPosString(position, logoImage.width, logoImage.height);
+        const [x, y, width, height] = this.getWatermarkDimensionsByPosString(
+          position,
+          logoImage.width,
+          logoImage.height
+        );
 
-        shapeOperations.addOrUpdate({
-          img: logoImage,
-          opacity,
-          index,
-          x,
-          y,
-          width,
-          height,
-          variant: SHAPES_VARIANTS.IMAGE,
-          key: WATERMARK_UNIQUE_KEY,
-          tab: 'watermark',
-          lockScaleToPercentage
-        }, watermarkImageStateObj);
-      }
+        shapeOperations.addOrUpdate(
+          {
+            img: logoImage,
+            opacity,
+            index,
+            x,
+            y,
+            width,
+            height,
+            variant: SHAPES_VARIANTS.IMAGE,
+            key: WATERMARK_UNIQUE_KEY,
+            tab: 'watermark',
+            lockScaleToPercentage,
+          },
+          watermarkImageStateObj
+        );
+      };
 
       logoImage.onerror = () => {
         updateState({ isShowSpinner: false });
-      }
+      };
 
       if (url.match(/^https?:\/\/./)) {
         // if the url is a HTTP URL add a cache breaker
@@ -299,16 +341,16 @@ export default class extends Component {
 
   showWatermarkList = () => {
     this.setState({ showWaterMarkList: true });
-  }
+  };
 
   hideWatermarkList = () => {
     this.setState({ showWaterMarkList: false });
-  }
+  };
 
   onChangeWatermark = (url) => {
     this.changeURL({ target: { value: url } });
     this.hideWatermarkList();
-  }
+  };
 
   handleInputTypeChange = ({ target }) => {
     const { updateState, config } = this.props;
@@ -319,15 +361,15 @@ export default class extends Component {
       this.changeTextProperty({
         target: {
           name: 'text',
-          value: (config.watermark || {}).defaultText || 'Your text'
-        }
-      })
-      updateState({ isShowSpinner: false })
+          value: (config.watermark || {}).defaultText || 'Your text',
+        },
+      });
+      updateState({ isShowSpinner: false });
     } else {
-      updateState({ watermark: {...this.props.watermark, text: null } });
-      this.initWatermarkImage(this.props.watermark.url || '')
+      updateState({ watermark: { ...this.props.watermark, text: null } });
+      this.initWatermarkImage(this.props.watermark.url || '');
     }
-  }
+  };
 
   render() {
     const {
@@ -356,7 +398,6 @@ export default class extends Component {
 
     return (
       <WatermarkWrapper>
-
         <WatermarkInputTypes>
           <label>
             {t['common.gallery']}
@@ -366,17 +407,26 @@ export default class extends Component {
               checked={selectedInputType === 'gallery'}
               onChange={this.handleInputTypeChange}
             />
-            <span/>
+            <span />
           </label>
-          <label style={{ cursor: config.processWithCloudimage ? 'not-allowed' : undefined }}>
+          <label
+            style={{
+              cursor: config.processWithCloudimage ? 'not-allowed' : undefined,
+            }}
+          >
             {t['common.upload']}
             <input
               type="radio"
               value="upload"
               checked={selectedInputType === 'upload'}
               disabled={config.processWithCloudimage}
-              onChange={!config.processWithCloudimage ? this.handleInputTypeChange : undefined}/>
-            <span/>
+              onChange={
+                !config.processWithCloudimage
+                  ? this.handleInputTypeChange
+                  : undefined
+              }
+            />
+            <span />
           </label>
           <label>
             {t['common.url']}
@@ -384,8 +434,9 @@ export default class extends Component {
               type="radio"
               value="url"
               checked={selectedInputType === 'url'}
-              onChange={this.handleInputTypeChange}/>
-            <span/>
+              onChange={this.handleInputTypeChange}
+            />
+            <span />
           </label>
           <label>
             {t['common.text']}
@@ -393,89 +444,117 @@ export default class extends Component {
               type="radio"
               value="text"
               checked={selectedInputType === 'text'}
-              onChange={this.handleInputTypeChange}/>
-            <span/>
+              onChange={this.handleInputTypeChange}
+            />
+            <span />
           </label>
         </WatermarkInputTypes>
-
         <WatermarkInputs>
           <WrapperForURL>
-            {galleryInput && (<>
-              <label htmlFor="url">Watermark Gallery</label>
-              <Select
-                width="100%"
-                list={urls}
-                valueProp="url"
-                id="gallery"
-                value={url}
-                style={{ width: 'calc(100% - 120px)' }}
-                onChange={(url) => { this.changeURL({ target: { value: url } }) }}
-              />
-            </>)}
-            {urlInput && (<>
-              <label htmlFor="url">Watermark URL</label>
-              <FieldInput
-                id="url"
-                value={url}
-                style={{ width: 'calc(100% - 120px)' }}
-                onChange={this.changeURL}
-              />
-            </>)}
-            {fileUploadInput && (<>
-              <label htmlFor="image-upload">Watermark Image</label>
-              <FileInput
-                id="image-upload"
-                style={{ width: 'calc(100% - 120px)' }}
-                onChange={this.readFile}
-              />
-            </>)}
-            {textInput && (<>
-              <label htmlFor="text">Watermark Text</label>
-              <FieldInput
-                id="text"
-                value={text}
-                style={{ width: 'calc(65% - 135px)', minWidth: 120 }}
-                name="text"
-                onChange={this.changeTextProperty}
-              />
-              <Select
-                list={config.processWithCloudimage ? WATERMARK_CLOUDIMAGE_FONTS : fonts}
-                valueProp="value"
-                id="textFont"
-                value={textFont}
-                style={{ width: 111, display: 'inline-block', marginLeft: 8 }}
-                onChange={(value) => this.changeTextProperty({ target: { name: 'textFont', value } })}
-              />
-              <FieldInput
-                value={textSize}
-                type="number"
-                name="textSize"
-                style={{ width: 60, marginLeft: 8 }}
-                onChange={this.changeTextProperty}
-              />
-              <FieldInput
-                value={color}
-                type="color"
-                style={{ width: 30, marginLeft: 8, padding: 0, background: 'transparent', boxShadow: 'none' }}
-                name="color"
-                onChange={this.changeTextProperty}
-              />
-            </>)}
+            {galleryInput && (
+              <>
+                <label>Watermark Gallery</label>
+                <a
+                  style={{
+                    background: 'white',
+                    padding: '0.25rem 0.5rem',
+                    textDecoration: 'none',
+                  }}
+                  href="#popup1"
+                >
+                  Open
+                </a>
+                <Modal />
+              </>
+            )}
+            {urlInput && (
+              <>
+                <label htmlFor="url">Watermark URL</label>
+                <FieldInput
+                  id="url"
+                  value={url}
+                  style={{ width: 'calc(100% - 120px)' }}
+                  onChange={this.changeURL}
+                />
+              </>
+            )}
+            {fileUploadInput && (
+              <>
+                <label htmlFor="image-upload">Watermark Image</label>
+                <FileInput
+                  id="image-upload"
+                  style={{ width: 'calc(100% - 120px)' }}
+                  onChange={this.readFile}
+                />
+              </>
+            )}
+            {textInput && (
+              <>
+                <label htmlFor="text">Watermark Text</label>
+                <FieldInput
+                  id="text"
+                  value={text}
+                  style={{ width: 'calc(65% - 135px)', minWidth: 120 }}
+                  name="text"
+                  onChange={this.changeTextProperty}
+                />
+                <Select
+                  list={
+                    config.processWithCloudimage
+                      ? WATERMARK_CLOUDIMAGE_FONTS
+                      : fonts
+                  }
+                  valueProp="value"
+                  id="textFont"
+                  value={textFont}
+                  style={{ width: 111, display: 'inline-block', marginLeft: 8 }}
+                  onChange={(value) =>
+                    this.changeTextProperty({
+                      target: { name: 'textFont', value },
+                    })
+                  }
+                />
+                <FieldInput
+                  value={textSize}
+                  type="number"
+                  name="textSize"
+                  style={{ width: 60, marginLeft: 8 }}
+                  onChange={this.changeTextProperty}
+                />
+                <FieldInput
+                  value={color}
+                  type="color"
+                  style={{
+                    width: 30,
+                    marginLeft: 8,
+                    padding: 0,
+                    background: 'transparent',
+                    boxShadow: 'none',
+                  }}
+                  name="color"
+                  onChange={this.changeTextProperty}
+                />
+              </>
+            )}
           </WrapperForURL>
-          <WrapperForControls switcherPosition={handleOpacity ? 'right' : 'left'}>
-            {handleOpacity &&
-            <WrapperForOpacity>
-              <label htmlFor="opacity" style={{ minWidth: 80 }}>Opacity</label>
-              <Range
-                label={t['common.opacity']}
-                min={0}
-                max={1}
-                step={0.05}
-                range={opacity}
-                updateRange={this.changeOpacity}
-              />
-            </WrapperForOpacity>
-            }
+          <WrapperForControls
+            switcherPosition={handleOpacity ? 'right' : 'left'}
+          >
+            {handleOpacity && (
+              <WrapperForOpacity>
+                <label htmlFor="opacity" style={{ minWidth: 80 }}>
+                  Opacity
+                </label>
+                <Range
+                  label={t['common.opacity']}
+                  min={0}
+                  max={1}
+                  step={0.05}
+                  range={opacity}
+                  updateRange={this.changeOpacity}
+                />
+              </WrapperForOpacity>
+            )}
           </WrapperForControls>
         </WatermarkInputs>
 
@@ -497,11 +576,18 @@ export default class extends Component {
 
         {isWatermarkList && showWaterMarkList && (
           <Watermarks>
-            {urls.map(url => <WatermarkIcon key={url} src={url} onClick={() => { this.onChangeWatermark(url) }}/>)}
+            {urls.map((url) => (
+              <WatermarkIcon
+                key={url}
+                src={url}
+                onClick={() => {
+                  this.onChangeWatermark(url);
+                }}
+              />
+            ))}
           </Watermarks>
         )}
-
       </WatermarkWrapper>
-    )
+    );
   }
 }
